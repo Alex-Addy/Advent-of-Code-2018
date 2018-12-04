@@ -12,6 +12,10 @@ pub fn work<R: Read>(r: R) {
         Ok(over) => info!("Part 1: {}", over),
         Err(err) => error!("Failed part 1: {}", err),
     }
+    match find_non_overlap(&lines) {
+        Ok(id) => info!("Part 2: {}", id),
+        Err(err) => error!("Failed part 1: {}", err),
+    }
 }
 
 fn count_overlapping<T: Deref<Target = str>>(lines: &[T]) -> Result<usize, String> {
@@ -54,6 +58,40 @@ fn count_overlapping<T: Deref<Target = str>>(lines: &[T]) -> Result<usize, Strin
     }
 
     Ok(overlap)
+}
+
+fn find_non_overlap<T: Deref<Target = str>>(lines: &[T]) -> Result<usize, String> {
+    let mut claims = Vec::new();
+
+    for line in lines {
+        let claim = Claim::try_parse(line)?;
+        claims.push(claim);
+    }
+
+    debug!("Got {} claims", claims.len());
+
+    let mut set: std::collections::HashSet<_> = claims.iter().map(|c| c.id).collect();
+
+    debug!("Collected claim ids into set of size: {}", set.len());
+
+    for k in 0..claims.len() {
+        for j in (k + 1)..claims.len() {
+            if claims[k].intersects(&claims[j]) {
+                set.remove(&claims[k].id);
+                set.remove(&claims[j].id);
+            }
+        }
+    }
+
+    debug!("Non-intersecting claims: {:?}", set);
+    if set.len() != 1 {
+        return Err(format!(
+            "non-intersecting claims not exactly 1: {}",
+            set.len()
+        ));
+    }
+
+    Ok(*set.iter().next().unwrap())
 }
 
 #[derive(Debug, PartialEq)]
@@ -108,6 +146,34 @@ impl Claim {
             height,
         })
     }
+
+    /// Returns true iff self intersects other.
+    fn intersects(&self, other: &Self) -> bool {
+        if self.left < other.left {
+            // left of other
+            if self.left + self.width >= other.left {
+                return true;
+            }
+        } else {
+            // right of other
+            if other.left + other.width >= self.left {
+                return true;
+            }
+        }
+        if self.top < other.top {
+            // above other
+            if self.top + self.height >= other.top {
+                return true;
+            }
+        } else {
+            // below other
+            if other.top + other.height >= self.top {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
 #[cfg(test)]
@@ -142,5 +208,43 @@ mod test {
     fn overlapping_example() {
         let boxes = vec!["#1 @ 1,3: 4x4", "#2 @ 3,1: 4x4", "#3 @ 5,5: 2x2"];
         assert_eq!(Ok(4), count_overlapping(&boxes));
+    }
+
+    #[test]
+    fn non_intersecting_claim_example() {
+        let boxes = vec!["#1 @ 1,3: 4x4", "#2 @ 3,1: 4x4", "#3 @ 5,5: 2x2"];
+        assert_eq!(Ok(3), find_non_overlap(&boxes));
+    }
+
+    #[test]
+    fn self_intersection() {
+        let c = Claim {
+            id: 1,
+            left: 2,
+            top: 2,
+            width: 2,
+            height: 2,
+        };
+        assert!(c.intersects(&c));
+    }
+
+    #[test]
+    fn non_intersecting_claims() {
+        let c1 = Claim {
+            id: 1,
+            left: 2,
+            top: 2,
+            width: 2,
+            height: 2,
+        };
+        let c2 = Claim {
+            id: 2,
+            left: 1002,
+            top: 1002,
+            width: 2,
+            height: 2,
+        };
+        assert!(!c1.intersects(&c2));
+        assert!(!c2.intersects(&c1));
     }
 }

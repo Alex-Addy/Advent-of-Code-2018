@@ -1,6 +1,7 @@
 extern crate clap;
 #[macro_use]
 extern crate log;
+extern crate regex;
 extern crate simplelog;
 
 use std::io;
@@ -48,6 +49,7 @@ fn main() {
         1 => solutions::day01::work(stdin.lock()),
         2 => solutions::day02::work(stdin.lock()),
         3 => solutions::day03::work(stdin.lock()),
+        4 => solutions::day04::work(stdin.lock()),
         _ => error!("Day {} not yet implemented", day),
     }
 }

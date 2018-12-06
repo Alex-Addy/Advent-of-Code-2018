@@ -50,6 +50,7 @@ fn main() {
         2 => solutions::day02::work(stdin.lock()),
         3 => solutions::day03::work(stdin.lock()),
         4 => solutions::day04::work(stdin.lock()),
+        5 => solutions::day05::work(stdin.lock()),
         _ => error!("Day {} not yet implemented", day),
     }
 }
